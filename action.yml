@@ -1,11 +1,28 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'ms-teams-deploy-release-card'
+description: 'Sends latest release notes to ms teams'
+author: 'Anton Lundmark'
 inputs:
-  milliseconds: # change this
+  ms-teams-webhook-url:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'Ms teams webhook url'
+  ms-teams-card-title:
+    required: false
+    description: 'Title for the ms teams card. Defaults to tag name.'
+  ms-teams-card-theme-color:
+    required: false
+    description: 'Theme color for the ms teams card.'
+  github-token:
+    required: true
+    description: 'GitHub token'
+  github-owner:
+    required: true
+    description: 'GitHub repository owner'
+  github-repo:
+    required: true
+    description: 'GitHub repository name'
+  github-tag:
+    required: true
+    description: 'GitHub tag to get release notes for' 
 runs:
   using: 'node12'
   main: 'dist/index.js'
