@@ -45,17 +45,17 @@ const emoji_name_map_1 = __importDefault(__nccwpck_require__(8839));
 const options_1 = __nccwpck_require__(1353);
 const ms_teams_1 = __nccwpck_require__(3916);
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
-const options = (0, options_1.getOptions)();
-const octokit = new octokit_1.Octokit({ auth: options.githubToken });
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const options = (0, options_1.getOptions)();
+            const octokit = new octokit_1.Octokit({ auth: options.githubToken });
             const releases = yield octokit.rest.repos.getReleaseByTag({
                 owner: options.githubOwner,
                 repo: options.githubRepo,
                 tag: options.githubTag,
             });
-            const body = fixMarkdown(releases.data.body);
+            const body = fixMarkdown(releases.data.body, options.anonymize);
             core.debug(`Raw releases notes: ${body}`);
             if (body) {
                 yield (0, ms_teams_1.postMessageToTeams)(options.msTeamsCardTitle, body, options.msTeamsCardThemeColor, options.msTeamsWebHookUrl);
@@ -70,12 +70,12 @@ function run() {
         }
     });
 }
-function fixMarkdown(body) {
+function fixMarkdown(body, anonymize) {
     if (!body) {
         return null;
     }
     let fixedBody = body;
-    if (options.anonymize) {
+    if (anonymize) {
         // Remove GitHub links
         for (const word of fixedBody.split(' ')) {
             if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
@@ -93,10 +93,10 @@ function fixMarkdown(body) {
             const unicode = (0, emoji_unicode_1.default)(emoji_name_map_1.default.get(word));
             if (unicode) {
                 const code = unicode.split(' ')[0];
+                core.debug(`Replaced ${word} with ${code}`);
                 fixedBody = fixedBody
                     .split(word)
-                    .join(`<img src="https://github.githubassets.com/images/icons/emoji/unicode/${code}.png" width="5"/>`);
-                // .join(`![${word}](https://github.githubassets.com/images/icons/emoji/unicode/${code}.png)`);
+                    .join(`![${word}](https://github.githubassets.com/images/icons/emoji/unicode/${code}.png)`);
             }
         }
     }
