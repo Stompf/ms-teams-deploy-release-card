@@ -9,6 +9,8 @@ import { postMessageToTeams } from './ms-teams';
 
 async function run(): Promise<void> {
   try {
+    core.debug(`Starting...`);
+
     const options = getOptions();
     const octokit = new Octokit({ auth: options.githubToken });
 
@@ -18,14 +20,16 @@ async function run(): Promise<void> {
       tag: options.githubTag,
     });
 
-    const body = fixMarkdown(releases.data.body, options.anonymize);
+    const { body } = releases.data;
 
     core.debug(`Raw releases notes: ${body}`);
 
-    if (body) {
+    const fixedBody = fixMarkdown(body, options.anonymize);
+
+    if (fixedBody) {
       await postMessageToTeams(
         options.msTeamsCardTitle,
-        body,
+        fixedBody,
         options.msTeamsCardThemeColor,
         options.msTeamsWebHookUrl
       );
@@ -33,7 +37,13 @@ async function run(): Promise<void> {
       core.info(`Nothing to send`);
     }
   } catch (error) {
-    if (error instanceof Error) core.setFailed(JSON.stringify(error));
+    if (error instanceof Error) {
+      core.setFailed(error.message);
+    } else if (typeof error === 'string') {
+      core.setFailed(error);
+    } else {
+      core.setFailed(`Action failed for unknown reason`);
+    }
   }
 }
 
@@ -42,13 +52,13 @@ function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
     return null;
   }
 
-  let fixedBody = body;
+  let fixedBody = body.split('\r\n').join(' \r\n ');
 
   if (anonymize) {
-    // Remove GitHub links
+    // Remove GitHub links linking to the repository
     for (const word of fixedBody.split(' ')) {
       if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
-        fixedBody = fixedBody.split(word.substring(0, word.indexOf('\r'))).join('');
+        fixedBody = fixedBody.split(word).join('');
       }
     }
 
@@ -62,6 +72,8 @@ function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
   // Replace GitHub emojis with images
   for (const word of fixedBody.split(' ')) {
     if (word.startsWith(':') && word.endsWith(':')) {
+      core.debug(`Found word ${word}`);
+
       const unicode: string | undefined = emojiUnicode(toEmoji.get(word));
       if (unicode) {
         const code = unicode.split(' ')[0];
