@@ -22,7 +22,11 @@ inputs:
     description: 'GitHub repository name'
   github-tag:
     required: true
-    description: 'GitHub tag to get release notes for' 
+    description: 'GitHub tag to get release notes for'
+  anonymize:
+    required: false
+    description: 'Anonymize auto-generated release notes'
+    default: 'false'
 runs:
   using: 'node12'
   main: 'dist/index.js'
