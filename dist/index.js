@@ -48,6 +48,7 @@ const ms_teams_1 = __nccwpck_require__(3916);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.debug(`Starting...`);
             const options = (0, options_1.getOptions)();
             const octokit = new octokit_1.Octokit({ auth: options.githubToken });
             const releases = yield octokit.rest.repos.getReleaseByTag({
@@ -55,18 +56,26 @@ function run() {
                 repo: options.githubRepo,
                 tag: options.githubTag,
             });
-            const body = fixMarkdown(releases.data.body, options.anonymize);
+            const { body } = releases.data;
             core.debug(`Raw releases notes: ${body}`);
-            if (body) {
-                yield (0, ms_teams_1.postMessageToTeams)(options.msTeamsCardTitle, body, options.msTeamsCardThemeColor, options.msTeamsWebHookUrl);
+            const fixedBody = fixMarkdown(body, options.anonymize);
+            if (fixedBody) {
+                yield (0, ms_teams_1.postMessageToTeams)(options.msTeamsCardTitle, fixedBody, options.msTeamsCardThemeColor, options.msTeamsWebHookUrl);
             }
             else {
                 core.info(`Nothing to send`);
             }
         }
         catch (error) {
-            if (error instanceof Error)
-                core.setFailed(JSON.stringify(error));
+            if (error instanceof Error) {
+                core.setFailed(error.message);
+            }
+            else if (typeof error === 'string') {
+                core.setFailed(error);
+            }
+            else {
+                core.setFailed(`Action failed for unknown reason`);
+            }
         }
     });
 }
@@ -74,12 +83,12 @@ function fixMarkdown(body, anonymize) {
     if (!body) {
         return null;
     }
-    let fixedBody = body;
+    let fixedBody = body.split('\r\n').join(' \r\n ');
     if (anonymize) {
-        // Remove GitHub links
+        // Remove GitHub links linking to the repository
         for (const word of fixedBody.split(' ')) {
             if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
-                fixedBody = fixedBody.split(word.substring(0, word.indexOf('\r'))).join('');
+                fixedBody = fixedBody.split(word).join('');
             }
         }
         // Remove authors
@@ -90,6 +99,7 @@ function fixMarkdown(body, anonymize) {
     // Replace GitHub emojis with images
     for (const word of fixedBody.split(' ')) {
         if (word.startsWith(':') && word.endsWith(':')) {
+            core.debug(`Found word ${word}`);
             const unicode = (0, emoji_unicode_1.default)(emoji_name_map_1.default.get(word));
             if (unicode) {
                 const code = unicode.split(' ')[0];
