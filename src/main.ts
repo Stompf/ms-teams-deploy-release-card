@@ -7,19 +7,18 @@ import { postMessageToTeams } from './ms-teams';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
-const options = getOptions();
-
-const octokit = new Octokit({ auth: options.githubToken });
-
 async function run(): Promise<void> {
   try {
+    const options = getOptions();
+    const octokit = new Octokit({ auth: options.githubToken });
+
     const releases = await octokit.rest.repos.getReleaseByTag({
       owner: options.githubOwner,
       repo: options.githubRepo,
       tag: options.githubTag,
     });
 
-    const body = fixMarkdown(releases.data.body);
+    const body = fixMarkdown(releases.data.body, options.anonymize);
 
     core.debug(`Raw releases notes: ${body}`);
 
@@ -38,14 +37,14 @@ async function run(): Promise<void> {
   }
 }
 
-function fixMarkdown(body: string | null | undefined) {
+function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
   if (!body) {
     return null;
   }
 
   let fixedBody = body;
 
-  if (options.anonymize) {
+  if (anonymize) {
     // Remove GitHub links
     for (const word of fixedBody.split(' ')) {
       if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
@@ -66,6 +65,8 @@ function fixMarkdown(body: string | null | undefined) {
       const unicode: string | undefined = emojiUnicode(toEmoji.get(word));
       if (unicode) {
         const code = unicode.split(' ')[0];
+
+        core.debug(`Replaced ${word} with ${code}`);
 
         fixedBody = fixedBody
           .split(word)
