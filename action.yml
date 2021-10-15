@@ -10,19 +10,16 @@ inputs:
     description: 'Ms teams webhook url'
   ms-teams-card-title:
     required: false
-    description: 'Title for the ms teams card. Defaults to tag name.'
+    description: 'Title for the ms teams card. Defaults to repo and tag name.'
   ms-teams-card-theme-color:
     required: false
     description: 'Theme color for the ms teams card.'
   github-token:
     required: true
     description: 'GitHub token'
-  github-owner:
-    required: true
-    description: 'GitHub repository owner'
   github-repo:
     required: true
-    description: 'GitHub repository name'
+    description: 'GitHub repository full name. Example: Stompf/ms-teams-deploy-release-card'
   github-tag:
     required: true
     description: 'GitHub tag to get release notes for'
