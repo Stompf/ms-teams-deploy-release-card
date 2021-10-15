@@ -1,32 +1,35 @@
 import * as core from '@actions/core';
 import { Octokit } from 'octokit';
-import axios from 'axios';
-import dotenv from 'dotenv';
 import emojiUnicode from 'emoji-unicode';
 import toEmoji from 'emoji-name-map';
-
-dotenv.config();
+import { getOptions } from './options';
+import { postMessageToTeams } from './ms-teams';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
-const octokit = new Octokit({ auth: core.getInput('github-token') });
+const options = getOptions();
+
+const octokit = new Octokit({ auth: options.githubToken });
 
 async function run(): Promise<void> {
   try {
     const releases = await octokit.rest.repos.getReleaseByTag({
-      owner: core.getInput('github-owner'),
-      repo: core.getInput('github-repo'),
-      tag: core.getInput('github-tag'),
+      owner: options.githubOwner,
+      repo: options.githubRepo,
+      tag: options.githubTag,
     });
 
-    const { body } = releases.data;
+    const body = fixMarkdown(releases.data.body);
 
-    core.debug(`Releases notes: ${body}`);
+    core.debug(`Raw releases notes: ${body}`);
 
     if (body) {
-      const title = core.getInput('ms-teams-card-title') || core.getInput('github-tag');
-
-      await postMessageToTeams(title, fixMarkdown(body));
+      await postMessageToTeams(
+        options.msTeamsCardTitle,
+        body,
+        options.msTeamsCardThemeColor,
+        options.msTeamsWebHookUrl
+      );
     } else {
       core.info(`Nothing to send`);
     }
@@ -35,11 +38,29 @@ async function run(): Promise<void> {
   }
 }
 
-function fixMarkdown(body: string) {
-  // Fixes newlines
-  let fixedBody = body.split('%0D').join('\n').split('%0A').join('\n');
+function fixMarkdown(body: string | null | undefined) {
+  if (!body) {
+    return null;
+  }
 
-  // Fixes emojis
+  let fixedBody = body;
+
+  if (options.anonymize) {
+    // Remove GitHub links
+    for (const word of fixedBody.split(' ')) {
+      if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
+        fixedBody = fixedBody.split(word.substring(0, word.indexOf('\r'))).join('');
+      }
+    }
+
+    // Remove authors
+    fixedBody = fixedBody.split(new RegExp(/by @[\S]* in/, 'gm')).join('');
+
+    // Remove full changelog link
+    fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
+  }
+
+  // Replace GitHub emojis with images
   for (const word of fixedBody.split(' ')) {
     if (word.startsWith(':') && word.endsWith(':')) {
       const unicode: string | undefined = emojiUnicode(toEmoji.get(word));
@@ -53,24 +74,11 @@ function fixMarkdown(body: string) {
     }
   }
 
+  fixedBody = fixedBody.trim();
+
+  core.debug(`Fixed releases notes: ${fixedBody}`);
+
   return fixedBody;
-}
-
-async function postMessageToTeams(title: string, message: string) {
-  const card = {
-    '@type': 'MessageCard',
-    '@context': 'http://schema.org/extensions',
-    themeColor: core.getInput('ms-teams-card-theme-color'),
-    text: message,
-    title,
-  };
-
-  const response = await axios.post(core.getInput('ms-teams-webhook-url'), card, {
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
-  return `${response.status} - ${response.statusText}`;
 }
 
 run();
