@@ -1,5 +1,5 @@
 name: 'ms-teams-deploy-release-card'
-description: 'Sends latest release notes to ms teams'
+description: 'Send GitHub release notes to ms teams'
 author: 'Anton Lundmark'
 inputs:
   ms-teams-webhook-url:
