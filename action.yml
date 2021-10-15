@@ -1,6 +1,9 @@
 name: 'ms-teams-deploy-release-card'
 description: 'Send GitHub release notes to ms teams'
 author: 'Anton Lundmark'
+branding:
+  color: blue
+  icon: activity
 inputs:
   ms-teams-webhook-url:
     required: true
