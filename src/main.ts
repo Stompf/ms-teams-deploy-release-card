@@ -65,6 +65,9 @@ function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
     // Remove authors
     fixedBody = fixedBody.split(new RegExp(/by @[\S]* in/, 'gm')).join('');
 
+    // Remove new contributors link
+    fixedBody = fixedBody.split(new RegExp(/## New Contributors.*/, 'gm')).join('');
+
     // Remove full changelog link
     fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
   }

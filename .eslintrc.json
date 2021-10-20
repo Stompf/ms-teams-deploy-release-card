@@ -8,6 +8,12 @@
       "project": "./tsconfig.json"
     },
     "rules": {
+      "prettier/prettier": [
+        "error",
+        {
+            "endOfLine": "auto"
+        }
+      ],
       "sort-imports": "off",
       "i18n-text/no-en": "off",
       "eslint-comments/no-use": "off",
