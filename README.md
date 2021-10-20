@@ -48,3 +48,20 @@ jobs:
 | `ms-teams-card-title`        | `false`  | `$(github-repo) - $(github-tag)` | The title shown on the ms teams card. Defaults to using the full repo name and the tag. <br/> Example: `Stompf/ms-teams-deploy-release-card - v1.0.0`                                                      |
 | ` ms-teams-card-theme-color` | `false`  | None                             | Theme color shown on the ms teams card.                                                                                                                                                                    |
 | `anonymize`                  | `false`  | `false`                          | Removes all links and contributors from the release notes sent to teams. Used for example if you auto-generate release notes in a private repository.                                                      |
+
+### Local development
+
+To test locally create a `.env` file in the root folder with the configuration above in uppercase and prefixed with `INPUT_`
+
+Example:
+
+```
+INPUT_MS-TEAMS-WEBHOOK-URL=https://webhook.office.com/webhookb2/123
+INPUT_GITHUB-TOKEN=abcdef1234
+INPUT_GITHUB-REPO=Stompf/ms-teams-deploy-release-card
+INPUT_GITHUB-TAG=v1.0.0
+INPUT_MS-TEAMS-CARD-THEME-COLOR=0072C6
+INPUT_ANONYMIZE=true
+```
+
+When this config file exists run with `npm start`
