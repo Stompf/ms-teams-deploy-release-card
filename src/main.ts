@@ -24,7 +24,7 @@ async function run(): Promise<void> {
 
     core.debug(`Raw releases notes: ${body}`);
 
-    const fixedBody = fixMarkdown(body, options.anonymize);
+    const fixedBody = fixMarkdown(body, options);
 
     if (fixedBody) {
       await postMessageToTeams(
@@ -47,17 +47,17 @@ async function run(): Promise<void> {
   }
 }
 
-function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
+function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof getOptions>) {
   if (!body) {
     return null;
   }
 
   let fixedBody = body.split('\r\n').join(' \r\n ');
 
-  if (anonymize) {
+  if (options.anonymize) {
     // Remove GitHub links linking to the repository
     for (const word of fixedBody.split(' ')) {
-      if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
+      if (word.startsWith(`https://github.com/${options.githubOwner}`)) {
         fixedBody = fixedBody.split(word).join('');
       }
     }
@@ -71,6 +71,14 @@ function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
 
     // Remove full changelog link
     fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
+  } else {
+    // Replace GitHub pull links
+    for (const word of fixedBody.split(' ')) {
+      if (word.startsWith(`https://github.com/${options.githubOwner}/${options.githubRepo}/pull/`)) {
+        fixedBody = fixedBody.split(word).join('');
+      } else if (word.match(new RegExp(/#\d*/))) {
+      }
+    }
   }
 
   // Replace GitHub emojis with images
