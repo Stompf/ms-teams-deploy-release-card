@@ -56,7 +56,7 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
 
   if (options.anonymize) {
     // Remove GitHub links linking to the repository
-    for (const word of fixedBody.split(' ')) {
+    for (const word of fixedBody.split(' ').filter(onlyUnique)) {
       if (word.startsWith(`https://github.com/${options.githubOwner}`)) {
         fixedBody = fixedBody.split(word).join('');
       }
@@ -73,10 +73,13 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
     fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
   } else {
     // Replace GitHub pull links
-    for (const word of fixedBody.split(' ')) {
-      if (word.match(/https:\/\/github.com\/${options.githubOwner}\/${options.githubRepo}\/pull\/\d*/)) {
-        fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/'))}](${word})`);
-      } else if (word.match(new RegExp(/#\d*/))) {
+    for (const word of fixedBody.split(' ').filter(onlyUnique)) {
+      if (word.match(new RegExp(`https://github\.com/${options.githubOwner}/${options.githubRepo}/pull/\d*`, 'gm'))) {
+        core.debug(`matching PR with link - ${word}`);
+        fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/') + 1)}](${word})`);
+      } else if (word.match(new RegExp(/#\d+/))) {
+        core.debug(`matching PR with hash - ${word}`);
+
         fixedBody = fixedBody
           .split(word)
           .join(
@@ -87,7 +90,7 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
   }
 
   // Replace GitHub emojis with images
-  for (const word of fixedBody.split(' ')) {
+  for (const word of fixedBody.split(' ').filter(onlyUnique)) {
     if (word.startsWith(':') && word.endsWith(':')) {
       core.debug(`Found word ${word}`);
 
@@ -109,6 +112,10 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
   core.debug(`Fixed releases notes: ${fixedBody}`);
 
   return fixedBody;
+}
+
+function onlyUnique<T>(value: T, index: number, self: T[]) {
+  return self.indexOf(value) === index;
 }
 
 run();
