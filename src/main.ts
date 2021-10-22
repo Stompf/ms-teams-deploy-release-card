@@ -4,6 +4,7 @@ import emojiUnicode from 'emoji-unicode';
 import toEmoji from 'emoji-name-map';
 import { getOptions } from './options';
 import { postMessageToTeams } from './ms-teams';
+import { utils } from './utils';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
@@ -56,7 +57,7 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
 
   if (options.anonymize) {
     // Remove GitHub links linking to the repository
-    for (const word of fixedBody.split(' ').filter(onlyUnique)) {
+    for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
       if (word.startsWith(`https://github.com/${options.githubOwner}`)) {
         fixedBody = fixedBody.split(word).join('');
       }
@@ -73,24 +74,29 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
     fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
   } else {
     // Replace GitHub pull links
-    for (const word of fixedBody.split(' ').filter(onlyUnique)) {
+    for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
       if (word.match(new RegExp(`https://github\.com/${options.githubOwner}/${options.githubRepo}/pull/\d*`, 'gm'))) {
         core.debug(`matching PR with link - ${word}`);
         fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/') + 1)}](${word})`);
       } else if (word.match(new RegExp(/#\d+/))) {
         core.debug(`matching PR with hash - ${word}`);
 
+        const newWord = word.split('(').join('').split(')').join('');
+
         fixedBody = fixedBody
-          .split(word)
+          .split(newWord)
           .join(
-            `[${word}](https://github.com/${options.githubOwner}/${options.githubRepo}/pull/${word.replace('#', '')})`
+            `[${newWord}](https://github.com/${options.githubOwner}/${options.githubRepo}/pull/${newWord.replace(
+              '#',
+              ''
+            )})`
           );
       }
     }
   }
 
   // Replace GitHub emojis with images
-  for (const word of fixedBody.split(' ').filter(onlyUnique)) {
+  for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
     if (word.startsWith(':') && word.endsWith(':')) {
       core.debug(`Found word ${word}`);
 
@@ -112,10 +118,6 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
   core.debug(`Fixed releases notes: ${fixedBody}`);
 
   return fixedBody;
-}
-
-function onlyUnique<T>(value: T, index: number, self: T[]) {
-  return self.indexOf(value) === index;
 }
 
 run();
