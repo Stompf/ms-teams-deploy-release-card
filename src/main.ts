@@ -74,9 +74,14 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
   } else {
     // Replace GitHub pull links
     for (const word of fixedBody.split(' ')) {
-      if (word.startsWith(`https://github.com/${options.githubOwner}/${options.githubRepo}/pull/`)) {
-        fixedBody = fixedBody.split(word).join('');
+      if (word.match(/https:\/\/github.com\/${options.githubOwner}\/${options.githubRepo}\/pull\/\d*/)) {
+        fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/'))}](${word})`);
       } else if (word.match(new RegExp(/#\d*/))) {
+        fixedBody = fixedBody
+          .split(word)
+          .join(
+            `[${word}](https://github.com/${options.githubOwner}/${options.githubRepo}/pull/${word.replace('#', '')})`
+          );
       }
     }
   }
