@@ -75,7 +75,7 @@ function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof
   } else {
     // Replace GitHub pull links
     for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
-      if (word.match(new RegExp(`https://github\.com/${options.githubOwner}/${options.githubRepo}/pull/\d*`, 'gm'))) {
+      if (word.match(new RegExp(`https://github.com/${options.githubOwner}/${options.githubRepo}/pull/d*`, 'gm'))) {
         core.debug(`matching PR with link - ${word}`);
         fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/') + 1)}](${word})`);
       } else if (word.match(new RegExp(/#\d+/))) {
