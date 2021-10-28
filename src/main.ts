@@ -5,15 +5,26 @@ import toEmoji from 'emoji-name-map';
 import { getOptions } from './options';
 import { postMessageToTeams } from './ms-teams';
 import { utils } from './utils';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
 async function run(): Promise<void> {
   try {
     core.debug(`Starting...`);
-
     const options = getOptions();
-    const octokit = new Octokit({ auth: options.githubToken });
+
+    let agent: HttpsProxyAgent | undefined;
+
+    if (process.env.HTTPS_PROXY) {
+      core.debug(`Using proxy ${process.env.HTTPS_PROXY}`);
+      agent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
+    }
+
+    const octokit = new Octokit({
+      auth: options.githubToken,
+      request: { agent },
+    });
 
     const releases = await octokit.rest.repos.getReleaseByTag({
       owner: options.githubOwner,
@@ -32,7 +43,8 @@ async function run(): Promise<void> {
         options.msTeamsCardTitle,
         fixedBody,
         options.msTeamsCardThemeColor,
-        options.msTeamsWebHookUrl
+        options.msTeamsWebHookUrl,
+        agent
       );
     } else {
       core.info(`Nothing to send`);
