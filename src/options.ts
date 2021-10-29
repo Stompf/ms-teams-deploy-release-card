@@ -18,3 +18,5 @@ export function getOptions() {
     anonymize: core.getInput('anonymize').toLowerCase().trim() === 'true',
   };
 }
+
+export type Options = ReturnType<typeof getOptions>;

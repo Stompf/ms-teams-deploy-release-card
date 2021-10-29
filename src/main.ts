@@ -1,18 +1,28 @@
 import * as core from '@actions/core';
 import { Octokit } from 'octokit';
-import emojiUnicode from 'emoji-unicode';
-import toEmoji from 'emoji-name-map';
 import { getOptions } from './options';
 import { postMessageToTeams } from './ms-teams';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { fixMarkdown } from './markdown';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
 async function run(): Promise<void> {
   try {
     core.debug(`Starting...`);
-
     const options = getOptions();
-    const octokit = new Octokit({ auth: options.githubToken });
+
+    let agent: HttpsProxyAgent | undefined;
+
+    if (process.env.HTTPS_PROXY) {
+      core.debug(`Using proxy ${process.env.HTTPS_PROXY}`);
+      agent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
+    }
+
+    const octokit = new Octokit({
+      auth: options.githubToken,
+      request: { agent },
+    });
 
     const releases = await octokit.rest.repos.getReleaseByTag({
       owner: options.githubOwner,
@@ -24,14 +34,15 @@ async function run(): Promise<void> {
 
     core.debug(`Raw releases notes: ${body}`);
 
-    const fixedBody = fixMarkdown(body, options.anonymize);
+    const fixedBody = fixMarkdown(body, options);
 
     if (fixedBody) {
       await postMessageToTeams(
         options.msTeamsCardTitle,
         fixedBody,
         options.msTeamsCardThemeColor,
-        options.msTeamsWebHookUrl
+        options.msTeamsWebHookUrl,
+        agent
       );
     } else {
       core.info(`Nothing to send`);
@@ -45,57 +56,6 @@ async function run(): Promise<void> {
       core.setFailed(`Action failed for unknown reason`);
     }
   }
-}
-
-function fixMarkdown(body: string | null | undefined, anonymize: boolean) {
-  if (!body) {
-    return null;
-  }
-
-  let fixedBody = body.split('\r\n').join(' \r\n ');
-
-  if (anonymize) {
-    // Remove GitHub links linking to the repository
-    for (const word of fixedBody.split(' ')) {
-      if (word.startsWith(`https://github.com/${core.getInput('github-owner')}`)) {
-        fixedBody = fixedBody.split(word).join('');
-      }
-    }
-
-    // Remove authors
-    fixedBody = fixedBody.split(new RegExp(/by @[\S]* in/, 'gm')).join('');
-
-    // Remove new contributors link
-    fixedBody = fixedBody.split(new RegExp(/## New Contributors.*/, 'gm')).join('');
-    fixedBody = fixedBody.split(new RegExp(/\* @[\S]* made their first contribution in/, 'gm')).join('');
-
-    // Remove full changelog link
-    fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
-  }
-
-  // Replace GitHub emojis with images
-  for (const word of fixedBody.split(' ')) {
-    if (word.startsWith(':') && word.endsWith(':')) {
-      core.debug(`Found word ${word}`);
-
-      const unicode: string | undefined = emojiUnicode(toEmoji.get(word));
-      if (unicode) {
-        const code = unicode.split(' ')[0];
-
-        core.debug(`Replaced ${word} with ${code}`);
-
-        fixedBody = fixedBody
-          .split(word)
-          .join(`![${word}](https://github.githubassets.com/images/icons/emoji/unicode/${code}.png)`);
-      }
-    }
-  }
-
-  fixedBody = fixedBody.trim();
-
-  core.debug(`Fixed releases notes: ${fixedBody}`);
-
-  return fixedBody;
 }
 
 run();
