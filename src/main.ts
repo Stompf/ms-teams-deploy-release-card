@@ -1,11 +1,9 @@
 import * as core from '@actions/core';
 import { Octokit } from 'octokit';
-import emojiUnicode from 'emoji-unicode';
-import toEmoji from 'emoji-name-map';
 import { getOptions } from './options';
 import { postMessageToTeams } from './ms-teams';
-import { utils } from './utils';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import { fixMarkdown } from './markdown';
 
 // https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 
@@ -58,78 +56,6 @@ async function run(): Promise<void> {
       core.setFailed(`Action failed for unknown reason`);
     }
   }
-}
-
-function fixMarkdown(body: string | null | undefined, options: ReturnType<typeof getOptions>) {
-  if (!body) {
-    return null;
-  }
-
-  let fixedBody = body.split('\r\n').join(' \r\n ');
-
-  if (options.anonymize) {
-    // Remove GitHub links linking to the repository
-    for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
-      if (word.startsWith(`https://github.com/${options.githubOwner}`)) {
-        fixedBody = fixedBody.split(word).join('');
-      }
-    }
-
-    // Remove authors
-    fixedBody = fixedBody.split(new RegExp(/by @[\S]* in/, 'gm')).join('');
-
-    // Remove new contributors link
-    fixedBody = fixedBody.split(new RegExp(/## New Contributors.*/, 'gm')).join('');
-    fixedBody = fixedBody.split(new RegExp(/\* @[\S]* made their first contribution in/, 'gm')).join('');
-
-    // Remove full changelog link
-    fixedBody = fixedBody.split(new RegExp(/\*\*Full Changelog\*\*.*/, 'gm')).join('');
-  } else {
-    // Replace GitHub pull links
-    for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
-      if (word.match(new RegExp(`https://github.com/${options.githubOwner}/${options.githubRepo}/pull/d*`, 'gm'))) {
-        core.debug(`matching PR with link - ${word}`);
-        fixedBody = fixedBody.split(word).join(`[#${word.substring(word.lastIndexOf('/') + 1)}](${word})`);
-      } else if (word.match(new RegExp(/#\d+/))) {
-        core.debug(`matching PR with hash - ${word}`);
-
-        const newWord = word.split('(').join('').split(')').join('');
-
-        fixedBody = fixedBody
-          .split(newWord)
-          .join(
-            `[${newWord}](https://github.com/${options.githubOwner}/${options.githubRepo}/pull/${newWord.replace(
-              '#',
-              ''
-            )})`
-          );
-      }
-    }
-  }
-
-  // Replace GitHub emojis with images
-  for (const word of fixedBody.split(' ').filter(utils.onlyUnique)) {
-    if (word.startsWith(':') && word.endsWith(':')) {
-      core.debug(`Found word ${word}`);
-
-      const unicode: string | undefined = emojiUnicode(toEmoji.get(word));
-      if (unicode) {
-        const code = unicode.split(' ')[0];
-
-        core.debug(`Replaced ${word} with ${code}`);
-
-        fixedBody = fixedBody
-          .split(word)
-          .join(`![${word}](https://github.githubassets.com/images/icons/emoji/unicode/${code}.png)`);
-      }
-    }
-  }
-
-  fixedBody = fixedBody.trim();
-
-  core.debug(`Fixed releases notes: ${fixedBody}`);
-
-  return fixedBody;
 }
 
 run();
