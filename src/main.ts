@@ -5,8 +5,6 @@ import { postMessageToTeams } from './ms-teams';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { fixMarkdown } from './markdown';
 
-// https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
-
 async function run(): Promise<void> {
   try {
     core.debug(`Starting...`);
@@ -42,6 +40,7 @@ async function run(): Promise<void> {
         fixedBody,
         options.msTeamsCardThemeColor,
         options.msTeamsWebHookUrl,
+        releases.data.html_url,
         agent
       );
     } else {
