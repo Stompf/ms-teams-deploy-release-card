@@ -40,7 +40,6 @@ const options_1 = __nccwpck_require__(1353);
 const ms_teams_1 = __nccwpck_require__(3916);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
 const markdown_1 = __nccwpck_require__(5821);
-// https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 async function run() {
     try {
         core.debug(`Starting...`);
@@ -63,7 +62,7 @@ async function run() {
         core.debug(`Raw releases notes: ${body}`);
         const fixedBody = (0, markdown_1.fixMarkdown)(body, options);
         if (fixedBody) {
-            await (0, ms_teams_1.postMessageToTeams)(options.msTeamsCardTitle, fixedBody, options.msTeamsCardThemeColor, options.msTeamsWebHookUrl, agent);
+            await (0, ms_teams_1.postMessageToTeams)(options.msTeamsCardTitle, fixedBody, options.msTeamsCardThemeColor, options.msTeamsWebHookUrl, releases.data.html_url, agent);
         }
         else {
             core.info(`Nothing to send`);
@@ -192,13 +191,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.postMessageToTeams = void 0;
 const node_fetch_1 = __importDefault(__nccwpck_require__(467));
-async function postMessageToTeams(title, message, themeColor, webhookUrl, agent) {
+// https://docs.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
+async function postMessageToTeams(title, message, themeColor, webhookUrl, releaseLink, agent) {
+    const linkAction = {
+        '@type': 'OpenUri',
+        name: 'View in GitHub',
+        targets: [{ os: 'default', uri: releaseLink }],
+    };
     const card = {
         '@type': 'MessageCard',
         '@context': 'http://schema.org/extensions',
         themeColor,
         text: message,
         title,
+        potentialAction: [linkAction],
     };
     const response = await (0, node_fetch_1.default)(webhookUrl, {
         method: 'post',
