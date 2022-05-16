@@ -28,7 +28,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.8.0",
+    "@actions/core": "^1.8.2",
     "dotenv": "^16.0.1",
     "emoji-name-map": "^1.2.9",
     "emoji-unicode": "^2.0.1",
