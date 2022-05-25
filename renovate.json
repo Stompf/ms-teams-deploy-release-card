@@ -5,6 +5,10 @@
     {
       "matchPackagePatterns": ["eslint"],
       "groupName": "eslint"
+    },
+    {
+      "matchPackagePatterns": ["jest"],
+      "groupName": "jest"
     }
   ],
   "automerge": true,
