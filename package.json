@@ -33,7 +33,7 @@
     "emoji-name-map": "1.2.9",
     "emoji-unicode": "2.0.1",
     "https-proxy-agent": "5.0.1",
-    "node-fetch": "3.2.4",
+    "node-fetch": "3.2.5",
     "octokit": "1.7.1"
   },
   "devDependencies": {
