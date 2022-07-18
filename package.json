@@ -34,7 +34,7 @@
     "emoji-unicode": "2.0.1",
     "https-proxy-agent": "5.0.1",
     "node-fetch": "3.2.8",
-    "octokit": "2.0.3"
+    "octokit": "2.0.4"
   },
   "devDependencies": {
     "@types/jest": "28.1.6",
