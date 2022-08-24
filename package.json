@@ -37,7 +37,7 @@
     "octokit": "2.0.7"
   },
   "devDependencies": {
-    "@types/jest": "28.1.7",
+    "@types/jest": "28.1.8",
     "@types/node": "16.11.51",
     "@types/node-fetch": "3.0.3",
     "@typescript-eslint/eslint-plugin": "5.34.0",
