@@ -26,7 +26,7 @@ jobs:
       # Gets the release tag
       - name: Get the release tag
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}}
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       # Send release notes to ms teams
       - uses: Stompf/ms-teams-deploy-release-card@main #  or "./" if in a local set-up
