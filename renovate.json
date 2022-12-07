@@ -1,6 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
+  "extends": [
+    "config:base",
+    "helpers:disableTypesNodeMajor",
+    "helpers:pinGitHubActionDigests",
+    "packages:eslint",
+    "group:jestPlusTSJest",
+    "group:recommended",
+    "workarounds:all"
+  ],
   "packageRules": [
     {
       "matchPackagePatterns": ["eslint"],
